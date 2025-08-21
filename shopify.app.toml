@@ -3,7 +3,7 @@
 client_id = "9f2cb326237c95eaf46afc296de301a5"
 name = "review_app"
 handle = "review-app-15"
-application_url = "https://pads-codes-mood-lease.trycloudflare.com"
+application_url = "https://stationery-titled-infants-tariff.trycloudflare.com"
 embedded = true
 
 [build]
@@ -26,7 +26,7 @@ api_version = "2025-07"
 scopes = "write_products"
 
 [auth]
-redirect_urls = ["https://pads-codes-mood-lease.trycloudflare.com/auth/callback", "https://pads-codes-mood-lease.trycloudflare.com/auth/shopify/callback", "https://pads-codes-mood-lease.trycloudflare.com/api/auth/callback"]
+redirect_urls = ["https://stationery-titled-infants-tariff.trycloudflare.com/auth/callback", "https://stationery-titled-infants-tariff.trycloudflare.com/auth/shopify/callback", "https://stationery-titled-infants-tariff.trycloudflare.com/api/auth/callback"]
 
 [pos]
 embedded = false

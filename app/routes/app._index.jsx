@@ -1,404 +1,105 @@
+import { TitleBar } from "@shopify/app-bridge-react";
 import {
-  TextField,
-  IndexTable,
-  LegacyCard,
-  IndexFilters,
-  useSetIndexFiltersMode,
-  useIndexResourceState,
-  Text,
-  ChoiceList,
-  RangeSlider,
   Badge,
-  useBreakpoints,
+  Button,
+  Card,
+  Collapsible,
+  Link,
   Page,
-  Layout,
+  Text,
 } from "@shopify/polaris";
-import { useState, useCallback } from "react";
+import React, { useState } from "react";
+import { IoCheckmarkCircleOutline, IoCheckmarkCircle } from "react-icons/io5";
 
-function IndexTableWithViewsSearchFilterSorting() {
-  const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const options = [
+  {
+    title: "Add Star Review Block",
+    desciption: "",
+    isCompeleted: true,
+  },
+  {
+    title: "Add Review Section",
+    desciption: "",
+    isCompeleted: true,
+  },
+];
 
-  const [itemStrings, setItemStrings] = useState([
-    "All",
-    "Unpaid",
-    "Open",
-    "Closed",
-    "Local delivery",
-    "Local pickup",
-  ]);
+function Index() {
+  const [isCollaps, setIsCollaps] = useState(null);
 
-  const deleteView = (index) => {
-    const newItemStrings = [...itemStrings];
-    newItemStrings.splice(index, 1);
-    setItemStrings(newItemStrings);
-    setSelected(0);
+  const handleCollaps = () => {
+    setIsCollaps(!isCollaps);
   };
-
-  const duplicateView = async (name) => {
-    setItemStrings([...itemStrings, name]);
-    setSelected(itemStrings.length);
-    await sleep(1);
-    return true;
-  };
-
-  const tabs = itemStrings.map((item, index) => ({
-    content: item,
-    index,
-    onAction: () => {},
-    id: `${item}-${index}`,
-    isLocked: index === 0,
-    actions:
-      index === 0
-        ? []
-        : [
-            {
-              type: "rename",
-              onAction: () => {},
-              onPrimaryAction: async (value) => {
-                const newItemsStrings = tabs.map((item, idx) =>
-                  idx === index ? value : item.content,
-                );
-                await sleep(1);
-                setItemStrings(newItemsStrings);
-                return true;
-              },
-            },
-            {
-              type: "duplicate",
-              onPrimaryAction: async (value) => {
-                await sleep(1);
-                duplicateView(value);
-                return true;
-              },
-            },
-            {
-              type: "edit",
-            },
-            {
-              type: "delete",
-              onPrimaryAction: async () => {
-                await sleep(1);
-                deleteView(index);
-                return true;
-              },
-            },
-          ],
-  }));
-
-  const [selected, setSelected] = useState(0);
-
-  const onCreateNewView = async (value) => {
-    await sleep(500);
-    setItemStrings([...itemStrings, value]);
-    setSelected(itemStrings.length);
-    return true;
-  };
-
-  const sortOptions = [
-    { label: "Order", value: "order asc", directionLabel: "Ascending" },
-    { label: "Order", value: "order desc", directionLabel: "Descending" },
-    { label: "Customer", value: "customer asc", directionLabel: "A-Z" },
-    { label: "Customer", value: "customer desc", directionLabel: "Z-A" },
-    { label: "Date", value: "date asc", directionLabel: "A-Z" },
-    { label: "Date", value: "date desc", directionLabel: "Z-A" },
-    { label: "Total", value: "total asc", directionLabel: "Ascending" },
-    { label: "Total", value: "total desc", directionLabel: "Descending" },
-  ];
-
-  const [sortSelected, setSortSelected] = useState(["order asc"]);
-  const { mode, setMode } = useSetIndexFiltersMode();
-  const onHandleCancel = () => {};
-
-  const onHandleSave = async () => {
-    await sleep(1);
-    return true;
-  };
-
-  const primaryAction =
-    selected === 0
-      ? {
-          type: "save-as",
-          onAction: onCreateNewView,
-          disabled: false,
-          loading: false,
-        }
-      : {
-          type: "save",
-          onAction: onHandleSave,
-          disabled: false,
-          loading: false,
-        };
-
-  const [accountStatus, setAccountStatus] = useState(undefined);
-  const [moneySpent, setMoneySpent] = useState(undefined);
-  const [taggedWith, setTaggedWith] = useState("");
-  const [queryValue, setQueryValue] = useState("");
-
-  const handleAccountStatusChange = useCallback(
-    (value) => setAccountStatus(value),
-    [],
-  );
-  const handleMoneySpentChange = useCallback(
-    (value) => setMoneySpent(value),
-    [],
-  );
-  const handleTaggedWithChange = useCallback(
-    (value) => setTaggedWith(value),
-    [],
-  );
-  const handleFiltersQueryChange = useCallback(
-    (value) => setQueryValue(value),
-    [],
-  );
-  const handleAccountStatusRemove = useCallback(
-    () => setAccountStatus(undefined),
-    [],
-  );
-  const handleMoneySpentRemove = useCallback(
-    () => setMoneySpent(undefined),
-    [],
-  );
-  const handleTaggedWithRemove = useCallback(() => setTaggedWith(""), []);
-  const handleQueryValueRemove = useCallback(() => setQueryValue(""), []);
-  const handleFiltersClearAll = useCallback(() => {
-    handleAccountStatusRemove();
-    handleMoneySpentRemove();
-    handleTaggedWithRemove();
-    handleQueryValueRemove();
-  }, [
-    handleAccountStatusRemove,
-    handleMoneySpentRemove,
-    handleQueryValueRemove,
-    handleTaggedWithRemove,
-  ]);
-
-  const filters = [
-    {
-      key: "accountStatus",
-      label: "Account status",
-      filter: (
-        <ChoiceList
-          title="Account status"
-          titleHidden
-          choices={[
-            { label: "Enabled", value: "enabled" },
-            { label: "Not invited", value: "not invited" },
-            { label: "Invited", value: "invited" },
-            { label: "Declined", value: "declined" },
-          ]}
-          selected={accountStatus || []}
-          onChange={handleAccountStatusChange}
-          allowMultiple
-        />
-      ),
-      shortcut: true,
-    },
-    {
-      key: "taggedWith",
-      label: "Tagged with",
-      filter: (
-        <TextField
-          label="Tagged with"
-          value={taggedWith}
-          onChange={handleTaggedWithChange}
-          autoComplete="off"
-          labelHidden
-        />
-      ),
-      shortcut: true,
-    },
-    {
-      key: "moneySpent",
-      label: "Money spent",
-      filter: (
-        <RangeSlider
-          label="Money spent is between"
-          labelHidden
-          value={moneySpent || [0, 500]}
-          prefix="$"
-          output
-          min={0}
-          max={2000}
-          step={1}
-          onChange={handleMoneySpentChange}
-        />
-      ),
-    },
-  ];
-
-  const appliedFilters = [];
-  if (accountStatus && !isEmpty(accountStatus)) {
-    appliedFilters.push({
-      key: "accountStatus",
-      label: disambiguateLabel("accountStatus", accountStatus),
-      onRemove: handleAccountStatusRemove,
-    });
-  }
-  if (moneySpent) {
-    appliedFilters.push({
-      key: "moneySpent",
-      label: disambiguateLabel("moneySpent", moneySpent),
-      onRemove: handleMoneySpentRemove,
-    });
-  }
-  if (!isEmpty(taggedWith)) {
-    appliedFilters.push({
-      key: "taggedWith",
-      label: disambiguateLabel("taggedWith", taggedWith),
-      onRemove: handleTaggedWithRemove,
-    });
-  }
-
-  const orders = [
-    {
-      id: "1020",
-      order: (
-        <Text as="span" variant="bodyMd" fontWeight="semibold">
-          #1020
-        </Text>
-      ),
-      date: "Jul 20 at 4:34pm",
-      customer: "Jaydon Stanton",
-      total: "$969.44",
-      paymentStatus: <Badge progress="complete">Paid</Badge>,
-      fulfillmentStatus: <Badge progress="incomplete">Unfulfilled</Badge>,
-    },
-    {
-      id: "1019",
-      order: (
-        <Text as="span" variant="bodyMd" fontWeight="semibold">
-          #1019
-        </Text>
-      ),
-      date: "Jul 20 at 3:46pm",
-      customer: "Ruben Westerfelt",
-      total: "$701.19",
-      paymentStatus: <Badge progress="partiallyComplete">Partially paid</Badge>,
-      fulfillmentStatus: <Badge progress="incomplete">Unfulfilled</Badge>,
-    },
-    {
-      id: "1018",
-      order: (
-        <Text as="span" variant="bodyMd" fontWeight="semibold">
-          #1018
-        </Text>
-      ),
-      date: "Jul 20 at 3.44pm",
-      customer: "Leo Carder",
-      total: "$798.24",
-      paymentStatus: <Badge progress="complete">Paid</Badge>,
-      fulfillmentStatus: <Badge progress="incomplete">Unfulfilled</Badge>,
-    },
-  ];
-
-  const resourceName = {
-    singular: "order",
-    plural: "orders",
-  };
-
-  const { selectedResources, allResourcesSelected, handleSelectionChange } =
-    useIndexResourceState(orders);
-
-  const rowMarkup = orders.map(
-    (
-      { id, order, date, customer, total, paymentStatus, fulfillmentStatus },
-      index,
-    ) => (
-      <IndexTable.Row
-        id={id}
-        key={id}
-        selected={selectedResources.includes(id)}
-        position={index}
-      >
-        <IndexTable.Cell>{order}</IndexTable.Cell>
-        <IndexTable.Cell>{date}</IndexTable.Cell>
-        <IndexTable.Cell>{customer}</IndexTable.Cell>
-        <IndexTable.Cell>
-          <Text as="span" alignment="end" numeric>
-            {total}
-          </Text>
-        </IndexTable.Cell>
-        <IndexTable.Cell>{paymentStatus}</IndexTable.Cell>
-        <IndexTable.Cell>{fulfillmentStatus}</IndexTable.Cell>
-      </IndexTable.Row>
-    ),
-  );
 
   return (
     <Page>
-      <Layout>
-        <Layout.Section>
-          <LegacyCard>
-            <IndexFilters
-              sortOptions={sortOptions}
-              sortSelected={sortSelected}
-              queryValue={queryValue}
-              queryPlaceholder="Searching in all"
-              onQueryChange={handleFiltersQueryChange}
-              onQueryClear={() => setQueryValue("")}
-              onSort={setSortSelected}
-              primaryAction={primaryAction}
-              cancelAction={{
-                onAction: onHandleCancel,
-                disabled: false,
-                loading: false,
-              }}
-              tabs={tabs}
-              selected={selected}
-              onSelect={setSelected}
-              canCreateNewView
-              onCreateNewView={onCreateNewView}
-              filters={filters}
-              appliedFilters={appliedFilters}
-              onClearAll={handleFiltersClearAll}
-              mode={mode}
-              setMode={setMode}
-            />
-            <IndexTable
-              condensed={useBreakpoints().smDown}
-              resourceName={resourceName}
-              itemCount={orders.length}
-              selectedItemsCount={
-                allResourcesSelected ? "All" : selectedResources.length
-              }
-              onSelectionChange={handleSelectionChange}
-              headings={[
-                { title: "Order" },
-                { title: "Date" },
-                { title: "Customer" },
-                { title: "Total", alignment: "end" },
-                { title: "Payment status" },
-                { title: "Fulfillment status" },
-              ]}
-            >
-              {rowMarkup}
-            </IndexTable>
-          </LegacyCard>
-        </Layout.Section>
-      </Layout>
+      <TitleBar title="Setup Your Review"></TitleBar>
+      <Card>
+        <Text variant="headingMd" as="h2">
+          Add Widget <Badge tone="attention">1/3 is completed !</Badge>
+        </Text>
+        <div
+          onClick={handleCollaps}
+          style={{ marginTop: 6, cursor: "pointer" }}
+        >
+          Add block and reviews section in your store
+        </div>
+
+        <div style={{ marginTop: 30 }}>
+          {options.map((item, i) => (
+            <React.Fragment key={i}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  cursor: "pointer",
+                  marginTop: 18,
+                }}
+                onClick={() => {
+                  setIsCollaps(i);
+                }}
+              >
+                {item.isCompeleted ? (
+                  <IoCheckmarkCircle style={{ width: 15, height: 15 }} />
+
+                ) : (
+                  <IoCheckmarkCircleOutline style={{ width: 15, height: 15 }} />
+
+                )}
+
+                <Text variant="headingSm" as="h3">
+                  {item.title}
+                </Text>
+              </div>
+
+              <Collapsible
+                open={isCollaps === i}
+                id="basic-collapsible"
+                transition={{
+                  duration: "200ms",
+                  timingFunction: "ease-in-out",
+                }}
+                expandOnPrint
+              >
+                <div style={{ marginLeft: 20, marginTop: 8 }}>
+                  <p>
+                    Lorem ipsum dolor sit amet consectetur, adipisicing elit.
+                    Totam illum ipsum aspernatur, dicta numquam distinctio
+                    consequuntur labore voluptates error quis soluta, quam hic.
+                    Quia officia culpa autem dolore id saepe!
+                  </p>
+                  <div style={{ marginTop: 12 }}>
+                    <Button variant="primary">Add</Button>
+                  </div>
+                </div>
+              </Collapsible>
+            </React.Fragment>
+          ))}
+        </div>
+      </Card>
     </Page>
   );
-
-  function disambiguateLabel(key, value) {
-    switch (key) {
-      case "moneySpent":
-        return `Money spent is between $${value[0]} and $${value[1]}`;
-      case "taggedWith":
-        return `Tagged with ${value}`;
-      case "accountStatus":
-        return value.map((val) => `Customer ${val}`).join(", ");
-      default:
-        return value;
-    }
-  }
-
-  function isEmpty(value) {
-    if (Array.isArray(value)) {
-      return value.length === 0;
-    } else {
-      return value === "" || value == null;
-    }
-  }
 }
 
-export default IndexTableWithViewsSearchFilterSorting;
+export default Index;
