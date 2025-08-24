@@ -13,7 +13,7 @@ import {
 } from "@shopify/polaris";
 import React, { useState } from "react";
 import { IoCheckmarkCircleOutline, IoCheckmarkCircle } from "react-icons/io5";
-import prodImg from "../../assets/images (1).jpeg";
+
 
 const options = [
   {
@@ -160,31 +160,31 @@ const sampleProducts = [
   {
     id: 1,
     name: "Wireless Headphones",
-    image: prodImg,
+    image: '',
     price: 99.99,
   },
   {
     id: 2,
     name: "Smartphone",
-    image: prodImg,
+    image: '',
     price: 599.99,
   },
   {
     id: 3,
     name: "Laptop",
-    image: prodImg,
+    image: '',
     price: 1099.0,
   },
   {
     id: 4,
     name: "Bluetooth Speaker",
-    image: prodImg,
+    image: '',
     price: 49.99,
   },
   {
     id: 5,
     name: "Smart Watch",
-    image: prodImg,
+    image: '',
     price: 199.5,
   },
 ];
