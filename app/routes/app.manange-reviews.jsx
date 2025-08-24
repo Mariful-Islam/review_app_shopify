@@ -17,7 +17,6 @@ import {
   Popover,
   RangeSlider,
   Text,
-  TextContainer,
   TextField,
   useBreakpoints,
   useIndexResourceState,
@@ -32,8 +31,8 @@ import moment from "moment/moment";
 export default function ManageReviews() {
   const [reviews, setReviews] = useState({});
   const [indexReviews, setIndexReviews] = useState([]);
-  const [page, setPage] = useState(1)
-  const [limit] = useState(8)
+  const [page, setPage] = useState(1);
+  const [limit] = useState(8);
 
   const [selectedReview, setSelectedReview] = useState(null);
   const [deleteConsent, setDeleteConsent] = useState(null);
@@ -44,12 +43,10 @@ export default function ManageReviews() {
   const [taggedWith, setTaggedWith] = useState("");
   const [queryValue, setQueryValue] = useState("");
 
-
-
-  const getReviews = async (page, limit, search) => {
+  const getReviews = async () => {
     try {
       const res = await fetch(
-        `https://shopify-review-api.vercel.app/api/reviews?shopId=71993557149&page=${page}&limit=${limit}&search=${search}`,
+        `https://shopify-review-api.vercel.app/api/reviews?shopId=71993557149&page=${page}&limit=${limit}&search=${queryValue}`,
         {
           method: "GET",
           headers: {
@@ -66,13 +63,10 @@ export default function ManageReviews() {
         ...rest,
       }));
 
-      console.log(indexData, "pppppppppppppppp");
 
       setIndexReviews(indexData);
 
       setReviews(data);
-
-      console.log(data);
 
       // here data are used
     } catch (err) {
@@ -81,7 +75,7 @@ export default function ManageReviews() {
   };
 
   useEffect(() => {
-    getReviews(page, limit, queryValue);
+    getReviews();
   }, [page, queryValue]);
 
   const [popoverActive, setPopoverActive] = useState(null);
@@ -101,7 +95,6 @@ export default function ManageReviews() {
       plain
       onClick={() => {
         setSelectedReview(review);
-        setActive(true);
       }}
     >
       {review.customerName}
@@ -138,11 +131,6 @@ export default function ManageReviews() {
     </div>,
   ]);
 
-  const [active, setActive] = useState(false);
-
-  const handleChange = (item) => {
-    setActive(!active);
-  };
 
   const onClose = () => {
     setDeleteConsent(null);
@@ -450,6 +438,7 @@ export default function ManageReviews() {
       (
         {
           id,
+          productName,
           customerName,
           productId,
           shopName,
@@ -457,6 +446,7 @@ export default function ManageReviews() {
           title,
           shopId,
           createdAt,
+          comment,
         },
         index,
       ) => (
@@ -470,10 +460,25 @@ export default function ManageReviews() {
             <Link
               dataPrimaryLink
               url="#"
-              onClick={() => console.log("gggggggggggg")}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+
+                setSelectedReview({
+                  id: id,
+                  customerName: customerName,
+                  productId: productId,
+                  shopName: shopName,
+                  rating: rating,
+                  title: title,
+                  shopId: shopId,
+                  comment: comment,
+                  createdAt: createdAt,
+                })
+              }}
             >
               <Text variant="bodyMd" fontWeight="bold" as="span">
-                {productId}
+                {productName}
               </Text>
             </Link>
           </IndexTable.Cell>
@@ -497,11 +502,8 @@ export default function ManageReviews() {
             {moment(createdAt).format("DD MMM, YYYY")}
           </IndexTable.Cell>
 
-          <IndexTable.Cell >
-            {/* <MenuHorizontalIcon
-              style={{ height: 20, width: 20 }}
-              onClick={() => setPopoverActive(index)}
-            /> */}
+          <IndexTable.Cell>
+
             <div
               key={index}
               style={{ cursor: "pointer", position: "relative" }}
@@ -510,7 +512,14 @@ export default function ManageReviews() {
                 <Popover
                   active={popoverActive === index}
                   activator={
-                    <div onClick={() => togglePopoverActive(index)} style={{marginTop: -8}}>
+                    <div
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        togglePopoverActive(index)
+                      }}
+                      style={{ marginTop: -8 }}
+                    >
                       <Icon source={MenuHorizontalIcon} tone="base" />
                     </div>
                   }
@@ -524,7 +533,9 @@ export default function ManageReviews() {
                         content: "Delete",
                         icon: DeleteIcon,
                         destructive: true,
-                        onAction: () =>
+                        onAction: (e) => {
+                          console.log(e)
+                          
                           setDeleteConsent({
                             id: id,
                             customerName: customerName,
@@ -534,7 +545,8 @@ export default function ManageReviews() {
                             title: title,
                             shopId: shopId,
                             createdAt: createdAt,
-                          }),
+                          })
+                        }
                       },
                     ]}
                   />
@@ -546,6 +558,9 @@ export default function ManageReviews() {
       ),
     );
   }
+
+
+  console.log(selectedReview, "----------")
 
   return (
     <Page>
@@ -635,16 +650,15 @@ export default function ManageReviews() {
 
       <Frame>
         <Modal
-          open={active}
-          onClose={handleChange}
+          open={selectedReview ? true : false}
+          onClose={()=>setSelectedReview(null)}
           title={selectedReview ? selectedReview.title : "Customer Review"}
           primaryAction={{
             content: "Close",
-            onAction: handleChange,
+            onAction: () => setSelectedReview(null),
           }}
         >
           <Modal.Section>
-            <TextContainer>
               {selectedReview ? (
                 <>
                   <p>
@@ -652,6 +666,9 @@ export default function ManageReviews() {
                   </p>
                   <p>
                     <strong>Rating:</strong> {selectedReview.rating}
+                  </p>
+                  <p>
+                    <strong>Ttile:</strong> {selectedReview.title}
                   </p>
                   <p>
                     <strong>Comment:</strong> {selectedReview.comment}
@@ -664,7 +681,6 @@ export default function ManageReviews() {
               ) : (
                 <p>No review selected.</p>
               )}
-            </TextContainer>
           </Modal.Section>
         </Modal>
       </Frame>
