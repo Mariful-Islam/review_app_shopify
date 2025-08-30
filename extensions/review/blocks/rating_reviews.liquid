@@ -1,0 +1,119 @@
+<div style="margin-top: 20px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
+  <div class="flex items-center gap-3">
+    <span id="star_rating_block" class="stars"></span> <span id="average_review_block"></span>
+  </div>
+
+  <div><span class="font-bold text-black" id="total_rating_block"></span> {{ block.settings.total_reviews }}</div>
+</div>
+
+<style>
+  .stars {
+      display: inline-block;
+      font-size: 30px;
+      color: gold;
+    }
+    .star {
+      display: inline-block;
+      position: relative;
+    }
+    .star::before {
+      content: '★';
+      color: lightgray;
+    }
+    .star.full::before {
+      color: gold;
+    }
+    .star.half::before {
+      color: gold;
+      content: '★';
+      position: absolute;
+      overflow: hidden;
+      width: 50%;
+    }
+</style>
+
+<script>
+  const url = window.location.href;
+
+  // Match /products/{product_id}
+  const productId = url.match(/products\/(\d+)/)?.[1];
+
+
+  console.log('Product ID:', {{ product.id }});
+
+
+
+  const getReviewsRating = () => {
+    fetch(`https://shopify-review-api.vercel.app/api/reviews?productId={{ product.variants.first.id }}&all=true`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-secret': '832a239e-6909-4b10-bcf5-a69f44edaa89',
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log('Reviews Data:', data);
+
+
+        let total_review = 0;
+        let num_of_review = 0;
+
+        data.reviews.forEach((review) => {
+          total_review += review.rating;
+          num_of_review += 1;
+        });
+
+        const average_review = total_review / num_of_review;
+
+        document.getElementById('average_review_block').innerHTML = ` (${average_review.toFixed(1)}) `;
+        document.getElementById('total_rating_block').textContent = num_of_review;
+        renderReviewStars(average_review);
+      })
+      .catch((err) => console.log(err));
+  };
+
+  getReviewsRating();
+
+  function renderReviewStars(rating) {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating - fullStars >= 0.25 && rating - fullStars < 0.75;
+    const starsContainer = document.getElementById('star_rating_block');
+
+    starsContainer.innerHTML = '';
+
+    for (let i = 0; i < 5; i++) {
+      const star = document.createElement('span');
+      star.classList.add('star');
+
+      if (i < fullStars) {
+        star.classList.add('full');
+      } else if (i === fullStars && hasHalfStar) {
+        star.classList.add('half');
+      }
+
+      starsContainer.appendChild(star);
+    }
+  }
+</script>
+
+{% schema %}
+{
+  "name": "Rating Reviews",
+  "target": "section",
+  "settings": [
+    {
+      "type": "color",
+      "id": "star_color",
+      "label": "Star color",
+      "default": "#fbbf24"
+    },
+    {
+      "type": "text",
+      "id": "total_reviews",
+      "label": "Total Reviews",
+      "default": "peoples love this product"
+    }
+  ]
+}
+{% endschema %}

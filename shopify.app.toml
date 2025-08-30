@@ -3,7 +3,7 @@
 client_id = "9f2cb326237c95eaf46afc296de301a5"
 name = "review_app"
 handle = "review-app-15"
-application_url = "https://converted-bride-issues-ministry.trycloudflare.com"
+application_url = "https://loud-tourism-sox-several.trycloudflare.com"
 embedded = true
 
 [build]
@@ -26,7 +26,7 @@ api_version = "2025-07"
 scopes = "write_products"
 
 [auth]
-redirect_urls = ["https://converted-bride-issues-ministry.trycloudflare.com/auth/callback", "https://converted-bride-issues-ministry.trycloudflare.com/auth/shopify/callback", "https://converted-bride-issues-ministry.trycloudflare.com/api/auth/callback"]
+redirect_urls = ["https://loud-tourism-sox-several.trycloudflare.com/auth/callback", "https://loud-tourism-sox-several.trycloudflare.com/auth/shopify/callback", "https://loud-tourism-sox-several.trycloudflare.com/api/auth/callback"]
 
 [pos]
 embedded = false

@@ -25,7 +25,9 @@ export default function App() {
         </Link>
         <Link to="/app/manange-reviews">Manage Reviews</Link>
         <Link to="/app/import-export-reviews">Import Export Reviews</Link>
+        <Link to="/app/customize">Customize</Link>
         <Link to="/app/setting">Setting</Link>
+
       </NavMenu>
       <Outlet />
     </AppProvider>

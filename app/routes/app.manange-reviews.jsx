@@ -6,10 +6,12 @@ import {
   Card,
   ChoiceList,
   DataTable,
+  DropZone,
   Frame,
   Icon,
   IndexFilters,
   IndexTable,
+  LegacyStack,
   Link,
   Modal,
   Page,
@@ -18,25 +20,35 @@ import {
   RangeSlider,
   Text,
   TextField,
+  Thumbnail,
   useBreakpoints,
   useIndexResourceState,
   useSetIndexFiltersMode,
 } from "@shopify/polaris";
 import React, { useCallback, useEffect, useState } from "react";
-import { DeleteIcon, MenuHorizontalIcon } from "@shopify/polaris-icons";
+import {
+  DeleteIcon,
+  MenuHorizontalIcon,
+  RefreshIcon,
+  NoteIcon,
+} from "@shopify/polaris-icons";
 import Papa from "papaparse";
 import ReactStars from "react-stars";
 import moment from "moment/moment";
+import * as XLSX from "xlsx";
 
 export default function ManageReviews() {
   const [reviews, setReviews] = useState({});
   const [indexReviews, setIndexReviews] = useState([]);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(false);
+
   const [page, setPage] = useState(1);
   const [limit] = useState(8);
 
   const [selectedReview, setSelectedReview] = useState(null);
   const [deleteConsent, setDeleteConsent] = useState(null);
   const [isDownloadCSV, setIsDownloadCSV] = useState(false);
+  const [isImportCSV, setIsImportCSV] = useState(false);
 
   const [accountStatus, setAccountStatus] = useState(undefined);
   const [moneySpent, setMoneySpent] = useState(undefined);
@@ -44,6 +56,8 @@ export default function ManageReviews() {
   const [queryValue, setQueryValue] = useState("");
 
   const getReviews = async () => {
+    setIsLoadingReviews(true);
+
     try {
       const res = await fetch(
         `https://shopify-review-api.vercel.app/api/reviews?shopId=71993557149&page=${page}&limit=${limit}&search=${queryValue}`,
@@ -63,10 +77,10 @@ export default function ManageReviews() {
         ...rest,
       }));
 
-
       setIndexReviews(indexData);
 
       setReviews(data);
+      setIsLoadingReviews(false);
 
       // here data are used
     } catch (err) {
@@ -130,7 +144,6 @@ export default function ManageReviews() {
       </div>
     </div>,
   ]);
-
 
   const onClose = () => {
     setDeleteConsent(null);
@@ -461,8 +474,8 @@ export default function ManageReviews() {
               dataPrimaryLink
               url="#"
               onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
+                e.preventDefault();
+                e.stopPropagation();
 
                 setSelectedReview({
                   id: id,
@@ -474,7 +487,7 @@ export default function ManageReviews() {
                   shopId: shopId,
                   comment: comment,
                   createdAt: createdAt,
-                })
+                });
               }}
             >
               <Text variant="bodyMd" fontWeight="bold" as="span">
@@ -503,7 +516,6 @@ export default function ManageReviews() {
           </IndexTable.Cell>
 
           <IndexTable.Cell>
-
             <div
               key={index}
               style={{ cursor: "pointer", position: "relative" }}
@@ -514,9 +526,9 @@ export default function ManageReviews() {
                   activator={
                     <div
                       onClick={(e) => {
-                        e.preventDefault()
-                        e.stopPropagation()
-                        togglePopoverActive(index)
+                        e.preventDefault();
+                        e.stopPropagation();
+                        togglePopoverActive(index);
                       }}
                       style={{ marginTop: -8 }}
                     >
@@ -534,8 +546,8 @@ export default function ManageReviews() {
                         icon: DeleteIcon,
                         destructive: true,
                         onAction: (e) => {
-                          console.log(e)
-                          
+                          console.log(e);
+
                           setDeleteConsent({
                             id: id,
                             customerName: customerName,
@@ -545,8 +557,8 @@ export default function ManageReviews() {
                             title: title,
                             shopId: shopId,
                             createdAt: createdAt,
-                          })
-                        }
+                          });
+                        },
                       },
                     ]}
                   />
@@ -559,8 +571,106 @@ export default function ManageReviews() {
     );
   }
 
+  console.log(selectedReview, "----------");
 
-  console.log(selectedReview, "----------")
+  const [files, setFiles] = useState([]);
+  const [parsedData, setParsedData] = useState([]);
+
+  const validTypes = [
+    "text/csv",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-excel",
+  ];
+
+  const handleDropZoneDrop = useCallback(
+    async (_dropFiles, acceptedFiles, _rejectedFiles) => {
+      const filteredFiles = acceptedFiles.filter((file) =>
+        validTypes.includes(file.type),
+      );
+      setFiles((prev) => [...prev, ...filteredFiles]);
+
+      for (const file of filteredFiles) {
+        if (file.type === "text/csv") {
+          // Parse CSV
+          const text = await file.text();
+          const result = Papa.parse(text, { header: true });
+          setParsedData((prev) => [...prev, ...result.data]);
+        } else if (
+          file.type ===
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+          file.type === "application/vnd.ms-excel"
+        ) {
+          // Parse XLSX
+          const data = await file.arrayBuffer();
+          const workbook = XLSX.read(data, { type: "array" });
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
+          const json = XLSX.utils.sheet_to_json(sheet);
+          setParsedData((prev) => [...prev, ...json]);
+        }
+      }
+    },
+    [],
+  );
+
+  const validImageTypes = ["image/gif", "image/jpeg", "image/png"];
+
+  const fileUpload = !files.length && <DropZone.FileUpload />;
+  const uploadedFiles = files.length > 0 && (
+    <div style={{ padding: "0" }}>
+      <LegacyStack vertical>
+        {files.map((file, index) => (
+          <LegacyStack alignment="center" key={index}>
+            <Thumbnail
+              size="small"
+              alt={file.name}
+              source={
+                validImageTypes.includes(file.type)
+                  ? window.URL.createObjectURL(file)
+                  : NoteIcon
+              }
+            />
+            <div>
+              {file.name}{" "}
+              <Text variant="bodySm" as="p">
+                {file.size} bytes
+              </Text>
+            </div>
+          </LegacyStack>
+        ))}
+      </LegacyStack>
+    </div>
+  );
+
+  useEffect(() => {
+    if (parsedData.length > 0) {
+      console.log(parsedData, "parsed data ----------");
+      // Here you can send parsedData to your API or process it as needed
+      parsedData.map((item) => {
+        fetch(`https://shopify-review-api.vercel.app/api/reviews`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-secret": "832a239e-6909-4b10-bcf5-a69f44edaa89",
+          },
+          body: JSON.stringify(item),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            console.log(data, "uploaded data -----------");
+            setFiles([]);
+            setParsedData([]);
+            setIsImportCSV(false);
+            getReviews();
+          })
+          .catch((err) => {
+            console.log(err);
+          });
+
+        return item;
+      });
+    }
+  }, [parsedData]);
 
   return (
     <Page>
@@ -571,7 +681,19 @@ export default function ManageReviews() {
         </Text>
 
         <div style={{ display: "flex", justifyContent: "end" }}>
-          <Button onClick={() => setIsDownloadCSV(true)}>Download CSV</Button>
+          <Button
+            onClick={getReviews}
+            loading={isLoadingReviews}
+            disabled={isLoadingReviews}
+          >
+            <Icon source={RefreshIcon} tone="base" />
+          </Button>
+          &nbsp; &nbsp;
+          <Button onClick={() => setIsDownloadCSV(true)}>Download</Button>{" "}
+          &nbsp; &nbsp;
+          <Button onClick={() => setIsImportCSV(true)} variant="primary">
+            Import
+          </Button>
         </div>
       </Card>
 
@@ -603,6 +725,7 @@ export default function ManageReviews() {
           setMode={setMode}
         />
         <IndexTable
+          loading={isLoadingReviews}
           condensed={useBreakpoints().smDown}
           resourceName={resourceName}
           itemCount={indexReviews?.length}
@@ -651,7 +774,7 @@ export default function ManageReviews() {
       <Frame>
         <Modal
           open={selectedReview ? true : false}
-          onClose={()=>setSelectedReview(null)}
+          onClose={() => setSelectedReview(null)}
           title={selectedReview ? selectedReview.title : "Customer Review"}
           primaryAction={{
             content: "Close",
@@ -659,28 +782,28 @@ export default function ManageReviews() {
           }}
         >
           <Modal.Section>
-              {selectedReview ? (
-                <>
-                  <p>
-                    <strong>Customer:</strong> {selectedReview.customerName}
-                  </p>
-                  <p>
-                    <strong>Rating:</strong> {selectedReview.rating}
-                  </p>
-                  <p>
-                    <strong>Ttile:</strong> {selectedReview.title}
-                  </p>
-                  <p>
-                    <strong>Comment:</strong> {selectedReview.comment}
-                  </p>
-                  <p>
-                    <strong>Date:</strong>{" "}
-                    {new Date(selectedReview.createdAt).toLocaleDateString()}
-                  </p>
-                </>
-              ) : (
-                <p>No review selected.</p>
-              )}
+            {selectedReview ? (
+              <>
+                <p>
+                  <strong>Customer:</strong> {selectedReview.customerName}
+                </p>
+                <p>
+                  <strong>Rating:</strong> {selectedReview.rating}
+                </p>
+                <p>
+                  <strong>Ttile:</strong> {selectedReview.title}
+                </p>
+                <p>
+                  <strong>Comment:</strong> {selectedReview.comment}
+                </p>
+                <p>
+                  <strong>Date:</strong>{" "}
+                  {new Date(selectedReview.createdAt).toLocaleDateString()}
+                </p>
+              </>
+            ) : (
+              <p>No review selected.</p>
+            )}
           </Modal.Section>
         </Modal>
       </Frame>
@@ -731,6 +854,44 @@ export default function ManageReviews() {
           >
             <Modal.Section>
               Are you want to download the <strong>CSV</strong> File ?
+            </Modal.Section>
+          </Modal>
+        </Frame>
+
+        <Frame>
+          <Modal
+            size="small"
+            open={isImportCSV}
+            onClose={() => setIsImportCSV(false)}
+            title="Import"
+            primaryAction={{
+              content: "Import",
+              onAction: () => setIsImportCSV(false),
+              disabled: !(parsedData.length > 0),
+            }}
+            secondaryActions={[
+              {
+                content: "Cancel",
+                onAction: () => setIsImportCSV(false),
+              },
+            ]}
+          >
+            <Modal.Section>
+              <DropZone
+                accept={[
+                  ".csv",
+                  ".xls",
+                  ".xlsx",
+                  "text/csv",
+                  "application/vnd.ms-excel",
+                  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                ]}
+                type="file"
+                onDrop={handleDropZoneDrop}
+              >
+                {uploadedFiles}
+                {fileUpload}
+              </DropZone>
             </Modal.Section>
           </Modal>
         </Frame>
